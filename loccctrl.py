@@ -11,14 +11,15 @@ class HardwareInterface:
 	def __init__(self):
 		self.ser = serial.Serial(port=config.PORT, baudrate=config.BAUDRATE)
 
-	def set_led(led, val):
+	def set_led(self, led, val):
 		self.ser.write(bytes([int(bool(led)), ord(str(int(val))), ord('\n')]))
 	
-	def open():
+	def open(self):
 		self.ser.write(b'o\n')
+		self.ser.read(1)
 	
-	def readcmd():
-		return ser.readline()[:-1]
+	def readcmd(self):
+		return self.ser.read(1)
 
 def ldap_connect():
 	ld = ldap.ldap(config.LDAP.URI)
@@ -46,23 +47,27 @@ def test_access(uid, pin):
 	return False
 
 hw = HardwareInterface()
+hw.open()
+exit()
 
 nums = list(map(str, range(10)))
 
-numbuf = []
+numbuf = ''
 while True:
-	cmd = hw.readcmd()
-	print('CMD:', cmd)
+	cmd = str(hw.readcmd(), 'ASCII')
+	print('CMD:', cmd, 'numbuf:', numbuf)
 	if cmd in nums:
-		numbuf += int(cmd)
-	if cmd in ['A', 'H']:
+		numbuf += cmd
+	if cmd in ['a', 'H']:
+		print('Checking access...')
 		uid = numbuf[:4]
-		pw = numbif[4:]
+		pin = numbuf[4:]
 		if(test_access(uid, pin)):
 			print('Access granted')
 			hw.open()
 		else:
 			print('Access denied')
-	if cmd in ['C', 'h']:
-		numbuf = []
+	if cmd in ['c', 'h']:
+		print('Aborted.')
+		numbuf = ''
 
