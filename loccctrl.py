@@ -4,6 +4,8 @@ import base64
 import hashlib
 import serial
 import time
+import threading
+import functools
 from lmap import *
 
 import config
@@ -11,16 +13,26 @@ import config
 class HardwareInterface:
 	def __init__(self):
 		self.ser = serial.Serial(port=config.PORT, baudrate=config.BAUDRATE)
+		self.lock = threading.Lock()
 
 	def set_led(self, led, val):
-		self.ser.write(bytes([ord('l'), ord(str(int(led))), ord(str(int(val))), ord('\n')]))
+		with self.lock:
+			self.ser.write(bytes([ord('\n'), ord('l'), ord(str(int(led))), ord(str(int(val))), ord('\n')]))
+			self.ser.read(1)
+	
+	def blink_led(self, led, duration, val=True):
+		self.set_led(led, val)
+		time.sleep(duration)
+		self.set_led(led, not val)
 	
 	def open(self):
-		self.ser.write(b'o\n')
-		self.ser.read(1)
+		with self.lock:
+			self.ser.write(b'\no\n')
+			self.ser.read(4)
 	
 	def readcmd(self):
-		return self.ser.read(1)
+		with self.lock:
+			return self.ser.read(1)
 
 def ldap_connect():
 	ld = ldap.ldap(config.LDAP.URI)
@@ -47,14 +59,20 @@ def test_access(uid, pin):
 		print('Invalid user/pin:', uid, '('+str(e)+')')
 	return False
 
+print('Starting up...')
 hw = HardwareInterface()
+hw.set_led(0, False) # green
+hw.set_led(1, False) # red
+hw.set_led(2, True) # yellow
+print('Hardware interface initialized.')
 
 nums = list(map(str, range(10)))
 
 numbuf = ''
 while True:
 	cmd = str(hw.readcmd(), 'ASCII')
-	print('CMD:', cmd, 'numbuf:', numbuf)
+	#print('CMD:', cmd, 'numbuf:', numbuf)
+	hw.blink_led(2, 0.1, False) # yellow
 	if cmd in nums:
 		numbuf += cmd
 	if cmd in ['a', 'H']:
@@ -63,10 +81,18 @@ while True:
 		pin = numbuf[4:]
 		if(test_access(uid, pin)):
 			print('Access granted')
+			hw.set_led(0, True) # green
 			hw.open()
+			hw.set_led(0, False) # green
+			numbuf = ''
 		else:
+			for i in range(10):
+				hw.blink_led(1, 0.1) # red
+				time.sleep(0.1)
 			print('Access denied')
+			numbuf = ''
 	if cmd in ['c', 'h']:
 		print('Aborted.')
+		hw.blink_led(1, 1.0) # red
 		numbuf = ''
 
