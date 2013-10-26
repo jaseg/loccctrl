@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import serial
+import time
 from lmap import *
 
 import config
@@ -12,7 +13,7 @@ class HardwareInterface:
 		self.ser = serial.Serial(port=config.PORT, baudrate=config.BAUDRATE)
 
 	def set_led(self, led, val):
-		self.ser.write(bytes([int(bool(led)), ord(str(int(val))), ord('\n')]))
+		self.ser.write(bytes([ord('l'), ord(str(int(led))), ord(str(int(val))), ord('\n')]))
 	
 	def open(self):
 		self.ser.write(b'o\n')
@@ -47,8 +48,6 @@ def test_access(uid, pin):
 	return False
 
 hw = HardwareInterface()
-hw.open()
-exit()
 
 nums = list(map(str, range(10)))
 
