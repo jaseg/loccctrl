@@ -75,7 +75,7 @@ while True:
 	hw.blink_led(2, 0.1, False) # yellow
 	if cmd in nums:
 		numbuf += cmd
-	if cmd in ['a', 'H']:
+	if cmd in ['a', 'H'] and len(numbuf) > 4:
 		print('Checking access...')
 		uid = numbuf[:4]
 		pin = numbuf[4:]
