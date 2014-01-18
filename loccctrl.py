@@ -10,9 +10,11 @@ from lmap import *
 
 import config
 
+PIN_CACHE = {}
+
 class HardwareInterface:
 	def __init__(self):
-		self.ser = serial.Serial(port=config.PORT, baudrate=config.BAUDRATE)
+		self.ser = serial.Serial(port=config.PORT, baudrate=config.BAUDRATE, timeout=10)
 		self.lock = threading.Lock()
 
 	def set_led(self, led, val):
@@ -49,14 +51,15 @@ def pwcheck(record, pw):
 	return hashv == newhashv
 
 def test_access(uid, pin):
-	lm = ldap_connect()
 	print('Looking up user', uid)
 	try:
+		lm = ldap_connect()
 		user = lm(config.LDAP.USERBASE).search(config.LDAP.ACCESS_FILTER.format(uid))[0]
-		if pwcheck(user[config.LDAP.PINFIELD], pin):
-			return True
+		PIN_CACHE[uid] = user[config.LDAP.PINFIELD]
 	except Exception as e:
 		print('Invalid user/pin:', uid, '('+str(e)+')')
+	if pwcheck(PIN_CACHE.get(uid, config.BACKUP_PIN), pin):
+		return True
 	return False
 
 print('Starting up...')
