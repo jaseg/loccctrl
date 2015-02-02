@@ -117,4 +117,5 @@ if __name__ == '__main__':
 			log('Error caught:', e)
 			hw.blink_led(1, 1.0) # red
 			numbuf = ''
+			sys.exit(3)
 
