@@ -87,29 +87,34 @@ if __name__ == '__main__':
 	nums = list(map(str, range(10)))
 	numbuf = ''
 	while True:
-		cmd = str(hw.readcmd(), 'ASCII')
-		#log('CMD:', cmd, 'numbuf:', numbuf)
-		hw.blink_led(2, 0.1, False) # yellow
-		if cmd in nums:
-			numbuf += cmd
-		if cmd in ['a', 'H'] and len(numbuf) > 4:
-			log('Checking access...')
-			uid = numbuf[:4]
-			pin = numbuf[4:]
-			if(test_access(uid, pin)):
-				log('Access granted')
-				hw.set_led(0, True) # green
-				hw.open()
-				hw.set_led(0, False) # green
+		try:
+			cmd = str(hw.readcmd(), 'ASCII')
+			#log('CMD:', cmd, 'numbuf:', numbuf)
+			hw.blink_led(2, 0.1, False) # yellow
+			if cmd in nums:
+				numbuf += cmd
+			if cmd in ['a', 'H'] and len(numbuf) > 4:
+				log('Checking access...')
+				uid = numbuf[:4]
+				pin = numbuf[4:]
+				if(test_access(uid, pin)):
+					log('Access granted')
+					hw.set_led(0, True) # green
+					hw.open()
+					hw.set_led(0, False) # green
+					numbuf = ''
+				else:
+					for i in range(10):
+						hw.blink_led(1, 0.1) # red
+						time.sleep(0.1)
+					log('Access denied')
+					numbuf = ''
+			if cmd in ['c', 'h']:
+				log('Aborted.')
+				hw.blink_led(1, 1.0) # red
 				numbuf = ''
-			else:
-				for i in range(10):
-					hw.blink_led(1, 0.1) # red
-					time.sleep(0.1)
-				log('Access denied')
-				numbuf = ''
-		if cmd in ['c', 'h']:
-			log('Aborted.')
+		except Exception as e:
+			log('Error caught:', e)
 			hw.blink_led(1, 1.0) # red
 			numbuf = ''
 
